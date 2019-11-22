@@ -73,14 +73,12 @@ class Test(QWidget):
     def nextFrameSlot(self):
         face_cascade = cv2.CascadeClassifier('haarcascade_frontface.xml')
         _, cam_real = self.cpt.read()
-        cam = cv2.cvtColor(cam_real, cv2.COLOR_BGR2RGB)
-        cam = cv2.cvtColor(cam, cv2.COLOR_RGB2GRAY)
+        cam_color = cv2.cvtColor(cam_real, cv2.COLOR_BGR2RGB)
+        cam = cv2.cvtColor(cam_real, cv2.COLOR_RGB2GRAY)
         faces = face_cascade.detectMultiScale(cam, 1.3, 5)#얼굴검출 (x,y,w,h)를 return
         cam = cv2.GaussianBlur(cam, (5, 5), 0)
-        print(faces)
-        #self.img_p = cv2.cvtColor(cam, cv2.COLOR_BGR2GRAY)
-        #cv2.imwrite('img_p.jpg', self.img_p)
-        #self.compare(self.img_o, self.img_p) 사용X
+        if len(faces) != 0:
+            print("Face Detect !!")
 
 
         #line모두 그리기
@@ -93,30 +91,22 @@ class Test(QWidget):
             x, y, w, h = cv2.boundingRect(c)
 
             size = len(approx)
-            if size == 4 and 1200 < peri < 2400:
+            if size == 4 and 2000 < peri:
                 cv2.imwrite("rectangle.jpg", cam_real)
                 print("Camera Detect!!")
-                print(peri)#2236
-            cv2.line(cam_real, tuple(approx[0][0]), tuple(approx[size - 1][0]), (0, 255, 0), 3)
+                cv2.imshow("Warning!!",cam_real)
+                #print(peri)#2236
+            cv2.line(cam_color, tuple(approx[0][0]), tuple(approx[size - 1][0]), (0, 255, 0), 3)
             for k in range(size - 1):
-                cv2.line(cam_real, tuple(approx[k][0]), tuple(approx[k + 1][0]), (0, 255, 0), 3)
+                cv2.line(cam_color, tuple(approx[k][0]), tuple(approx[k + 1][0]), (0, 255, 0), 3)
 
-        #self.img_o = self.img_p.copy()
-        img = QImage(cam_real, cam_real.shape[1], cam_real.shape[0], QImage.Format_RGB888)
+        img = QImage(cam_color, cam_real.shape[1], cam_real.shape[0], QImage.Format_RGB888)
         pix = QPixmap.fromImage(img)
         self.frame.setPixmap(pix)
 
     def stop(self):
         self.frame.setPixmap(QPixmap.fromImage(QImage()))
         self.timer.stop()
-    '''
-    def compare(self, img_o, img_p):
-        err = np.sum((img_o.astype("float") - img_p.astype("float")) ** 2)
-        err /= float(img_o.shape[0] * img_p.shape[1])
-        if(err>=self.sens):
-            t = time.localtime()
-            self.prt.setText("{}-{}-{} {}:{}:{} 탐지".format(t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec))
-    '''
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
