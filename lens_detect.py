@@ -38,22 +38,9 @@ class Test(QWidget):
         self.prt.resize(200, 25)
         self.prt.move(5+105+105, 490)
 
-        self.sldr = QSlider(Qt.Horizontal, self)
-        self.sldr.resize(100, 25)
-        self.sldr.move(5+105+105+200, 490)
-        self.sldr.setMinimum(1)
-        self.sldr.setMaximum(30)
-        self.sldr.setValue(24)
-        self.sldr.valueChanged.connect(self.setFps)
-
-        self.sldr1 = QSlider(Qt.Horizontal, self)
-        self.sldr1.resize(100, 25)
-        self.sldr1.move(5 + 105 + 105 + 200 + 105, 490)
-        self.sldr1.setMinimum(50)
-        self.sldr1.setMaximum(500)
-        self.sldr1.setValue(300)
-        self.sldr1.valueChanged.connect(self.setSens)
-        self.show()
+        self.prt1 = QLabel(self)
+        self.prt1.resize(200, 25)
+        self.prt1.move(5+105+105+200, 490)
 
     def setFps(self):
         self.fps = self.sldr.value()
@@ -64,6 +51,15 @@ class Test(QWidget):
     def setSens(self):
         self.sens = self.sldr1.value()
         self.prt.setText("감도" + str(self.sens) + "로 조정합니다.")
+
+    def faceDetect(self):
+        self.prt.setText("얼굴 탐지하였습니다.")
+
+    def faceUnDetect(self):
+        self.prt.setText("")
+
+    def camDetect(self):
+        self.prt1.setText("촬영이 탐지되었습니다.")
 
     def start(self):
         self.timer = QTimer()
@@ -78,8 +74,9 @@ class Test(QWidget):
         faces = face_cascade.detectMultiScale(cam, 1.3, 5)#얼굴검출 (x,y,w,h)를 return
         cam = cv2.GaussianBlur(cam, (5, 5), 0)
         if len(faces) != 0:
-            print("Face Detect !!")
-
+            self.faceDetect()
+        else:
+            self.faceUnDetect()
 
         #line모두 그리기
         ret, image_binary = cv2.threshold(cam, 127, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
@@ -92,9 +89,12 @@ class Test(QWidget):
 
             size = len(approx)
             if size == 4 and 2000 < peri:
-                cv2.imwrite("rectangle.jpg", cam_real)
-                print("Camera Detect!!")
-                cv2.imshow("Warning!!",cam_real)
+                cv2.imwrite("Evidence.jpg", cam_real)
+                self.camDetect()
+                warning = cv2.imread("warning1.jpg", cv2.IMREAD_COLOR)
+                cv2.namedWindow("Warning!", cv2.WND_PROP_FULLSCREEN)
+                cv2.setWindowProperty("Warning!", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+                cv2.imshow("Warning!", warning)
                 #print(peri)#2236
             cv2.line(cam_color, tuple(approx[0][0]), tuple(approx[size - 1][0]), (0, 255, 0), 3)
             for k in range(size - 1):
