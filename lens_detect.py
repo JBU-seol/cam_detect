@@ -42,16 +42,6 @@ class Test(QWidget):
         self.prt1.resize(200, 25)
         self.prt1.move(5+105+105+200, 490)
 
-    def setFps(self):
-        self.fps = self.sldr.value()
-        self.prt.setText("FPS" + str(self.fps) + "로 조정합니다.")
-        self.timer.stop()
-        self.timer.start(1000. / self.fps)
-
-    def setSens(self):
-        self.sens = self.sldr1.value()
-        self.prt.setText("감도" + str(self.sens) + "로 조정합니다.")
-
     def faceDetect(self):
         self.prt.setText("얼굴 탐지하였습니다.")
 
