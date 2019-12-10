@@ -1,16 +1,22 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import  *
 from PyQt5.QtCore import *
+from PyQt5 import QtWidgets
 import cv2, sys, time
 import numpy as np
 from matplotlib import pyplot as plt
+from playsound import playsound
+import bcrypt
 
-class Test(QWidget):
+class Detect(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Cam_Test")
+        self.setWindowIcon(QIcon("icon.png"))
         self.setGeometry(150, 150, 650, 540)
-        self.initUI()
+        self.initUI();
+        finish = QAction("Quit", self)
+        finish.triggered.connect(self.closeEvent)
 
     def initUI(self):
         self.cpt = cv2.VideoCapture(0)
@@ -43,18 +49,31 @@ class Test(QWidget):
         self.prt1.move(5+105+105+200, 490)
 
     def faceDetect(self):
+        playsound('1.mp3', False)
         self.prt.setText("얼굴 탐지하였습니다.")
-
+        '''
+        login = Login()
+        if login.exec_() == QtWidgets.QDialog.Accepted:
+            window = Window()
+            window.show()
+            sys.exit(app.exec_())
+        '''
     def faceUnDetect(self):
         self.prt.setText("")
 
     def camDetect(self):
+        playsound('2.mp3', False)
         self.prt1.setText("촬영이 탐지되었습니다.")
+        login = Login()
+        if login.exec_() == QtWidgets.QDialog.Accepted:
+            window = Window()
+            window.show()
+            sys.exit(app.exec_())
 
     def start(self):
         self.timer = QTimer()
         self.timer.timeout.connect(self.nextFrameSlot)
-        self.timer.start(1000. / self.fps)
+        self.timer.start(int(1000./self.fps))
 
     def nextFrameSlot(self):
         face_cascade = cv2.CascadeClassifier('haarcascade_frontface.xml')
@@ -80,11 +99,11 @@ class Test(QWidget):
             size = len(approx)
             if size == 4 and 2000 < peri:
                 cv2.imwrite("Evidence.jpg", cam_real)
-                self.camDetect()
                 warning = cv2.imread("warning1.jpg", cv2.IMREAD_COLOR)
                 cv2.namedWindow("Warning!", cv2.WND_PROP_FULLSCREEN)
                 cv2.setWindowProperty("Warning!", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
                 cv2.imshow("Warning!", warning)
+                self.camDetect()
                 #print(peri)#2236
             cv2.line(cam_color, tuple(approx[0][0]), tuple(approx[size - 1][0]), (0, 255, 0), 3)
             for k in range(size - 1):
@@ -98,10 +117,53 @@ class Test(QWidget):
         self.frame.setPixmap(QPixmap.fromImage(QImage()))
         self.timer.stop()
 
+    def closeEvent(self, event):
+        close = QMessageBox.question(self, "안내", "종료할 수 없습니다.", QMessageBox.Ok)
+        event.ignore()
+
+class Login(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super(Login, self).__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowTitle("관리자 로그인")
+        self.setWindowIcon(QIcon("icon.png"))
+        self.inputID = QtWidgets.QLineEdit(self)
+        self.inputPW = QtWidgets.QLineEdit(self)
+        self.inputPW.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.buttonLogin = QtWidgets.QPushButton('로그인', self)
+        self.buttonLogin.clicked.connect(self.handle_login)
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(self.inputID)
+        layout.addWidget(self.inputPW)
+        layout.addWidget(self.buttonLogin)
+        finish = QAction("Quit", self)
+        finish.triggered.connect(self.closeEvent)
+
+    def closeEvent(self, event):
+        close = QMessageBox.question(self, "안내", "종료할 수 없습니다.", QMessageBox.Ok)
+        event.ignore()
+
+    def login_check(self):
+        for line in open("security.gif","r").readlines():
+            login_info = line.split()
+            if self.inputID.text() == login_info[0] and self.inputPW.text() == login_info[1]:
+                return True
+        return False
+    
+    def handle_login(self):
+        if (self.login_check() == True):
+            self.accept()
+        else:
+            QtWidgets.QMessageBox.warning(self, '오류', '아이디나 비밀번호가 틀렸습니다.')
+
+class Window(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super(Window, self).__init__(parent)
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    test = Test()
-    test.show()
+    detect = Detect()
+    detect.show()
     app.exec_()
 
 
