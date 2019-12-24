@@ -2,11 +2,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import  *
 from PyQt5.QtCore import *
 from PyQt5 import QtWidgets
-import cv2, sys, time
-import numpy as np
-from matplotlib import pyplot as plt
+import cv2, sys
 from playsound import playsound
-import bcrypt
 
 class Detect(QWidget):
     def __init__(self):
@@ -20,7 +17,7 @@ class Detect(QWidget):
         finish.triggered.connect(self.closeEvent)
 
     def initUI(self):
-        self.introduction = open("introduction.txt","r").read()
+        self.introduction = open("introduction.txt", "r").read()
         self.manual = open("manual.txt","r").read()
         self.cpt = cv2.VideoCapture(0)
         self.fps = 24
@@ -82,26 +79,22 @@ class Detect(QWidget):
         sys.exit(0)
 
     def faceDetect(self):
-        self.prt.setText("얼굴 탐지하였습니다.")
-        '''
-        playsound('1.mp3', False)
-        login = Login()
-        if login.exec_() == QtWidgets.QDialog.Accepted:
-            window = Window()
-            window.show()
-            sys.exit(app.exec_())
-        '''
+        self.prt.setText("얼굴 인식")
+
     def faceUnDetect(self):
         self.prt.setText("")
 
     def camDetect(self):
-        playsound('2.mp3', False)
+        #playsound('.mp3\\2.mp3', False)
+        warning = cv2.imread("warning.jpg", cv2.IMREAD_COLOR)
+        cv2.namedWindow("Warning!", cv2.WND_PROP_FULLSCREEN)
+        cv2.setWindowProperty("Warning!", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        cv2.imshow("Warning!", warning)
+        playsound('siren.mp3', False)
         self.prt1.setText("촬영이 탐지되었습니다.")
         login = Login()
-        if login.exec_() == QtWidgets.QDialog.Accepted:
-            window = Window()
-            window.show()
-            sys.exit(app.exec_())
+        login.exec_()
+
 
     def start(self):
         self.btn_off.setEnabled(True)
@@ -111,12 +104,13 @@ class Detect(QWidget):
         self.timer.timeout.connect(self.nextFrameSlot)
 
     def nextFrameSlot(self):
-        face_cascade = cv2.CascadeClassifier('haarcascade_frontface.xml')
+        face_cascade = cv2.CascadeClassifier('haarcascade_frontface.xml')#.xml\\
         _, cam_real = self.cpt.read()
         cam_color = cv2.cvtColor(cam_real, cv2.COLOR_BGR2RGB)
         cam = cv2.cvtColor(cam_real, cv2.COLOR_RGB2GRAY)
         faces = face_cascade.detectMultiScale(cam, 1.3, 5)#얼굴검출 (x,y,w,h)를 return
         cam = cv2.GaussianBlur(cam, (5, 5), 0)
+        #print(faces);
         if len(faces) != 0:
             self.faceDetect()
         else:
@@ -129,14 +123,9 @@ class Detect(QWidget):
             peri = cv2.arcLength(c, True)
             approx = cv2.approxPolyDP(c, peri * 0.0001, True)
             x, y, w, h = cv2.boundingRect(c)
-
             size = len(approx)
             if size == 4 and 2000 < peri: #print(peri)#2236
                 cv2.imwrite("Evidence.jpg", cam_real)
-                warning = cv2.imread("warning1.jpg", cv2.IMREAD_COLOR)
-                cv2.namedWindow("Warning!", cv2.WND_PROP_FULLSCREEN)
-                cv2.setWindowProperty("Warning!", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-                cv2.imshow("Warning!", warning)
                 self.camDetect()
         #     Line 그리기
         #     cv2.line(cam_color, tuple(approx[0][0]), tuple(approx[size - 1][0]), (0, 255, 0), 3)
@@ -155,7 +144,7 @@ class Detect(QWidget):
 
 
     def closeEvent(self, event):
-        close = QMessageBox.question(self, "안내", "종료할 수 없습니다.", QMessageBox.Ok)
+        QMessageBox.question(self, "안내", "종료할 수 없습니다.", QMessageBox.Ok)
         event.ignore()
 
 class Login(QtWidgets.QDialog):
@@ -163,7 +152,7 @@ class Login(QtWidgets.QDialog):
         super(Login, self).__init__(parent)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle("관리자 로그인")
-        self.setWindowIcon(QIcon("icon.png"))
+        self.setWindowIcon(QIcon(".img\\icon.png"))
         self.inputID = QtWidgets.QLineEdit(self)
         self.inputPW = QtWidgets.QLineEdit(self)
         self.inputPW.setEchoMode(QtWidgets.QLineEdit.Password)
@@ -177,11 +166,11 @@ class Login(QtWidgets.QDialog):
         finish.triggered.connect(self.closeEvent)
 
     def closeEvent(self, event):
-        close = QMessageBox.question(self, "안내", "종료할 수 없습니다.", QMessageBox.Ok)
+        QMessageBox.question(self, "안내", "종료할 수 없습니다.", QMessageBox.Ok)
         event.ignore()
 
     def login_check(self):
-        for line in open("security.gif","r").readlines():
+        for line in open("security.jpg","r").readlines():
             login_info = line.split()
             if self.inputID.text() == login_info[0] and self.inputPW.text() == login_info[1]:
                 return True
@@ -189,13 +178,11 @@ class Login(QtWidgets.QDialog):
     
     def handle_login(self):
         if (self.login_check() == True):
+            cv2.destroyAllWindows()
             self.accept()
         else:
             QtWidgets.QMessageBox.warning(self, '오류', '아이디나 비밀번호가 틀렸습니다.')
 
-class Window(QtWidgets.QMainWindow):
-    def __init__(self, parent=None):
-        super(Window, self).__init__(parent)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
