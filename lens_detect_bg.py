@@ -3,30 +3,62 @@ from PyQt5.QtGui import  *
 from PyQt5.QtCore import *
 from PyQt5 import QtWidgets
 import cv2, sys, time
+import numpy as np
+import tensorflow.keras
+from PIL import Image
 from playsound import playsound
+import bcrypt
 
 class screenguard():
     def __init__(self):
         self.login = Login()
         self.cam = cv2.VideoCapture(0)
         self.index = 1
+        np.set_printoptions(suppress=True)
+
+        # Load the model
+        self.model = tensorflow.keras.models.load_model('keras_model.h5')
+
+        # Create the array of the right shape to feed into the keras model
+        # The 'length' or number of images you can put into the array is
+        # determined by the first position in the shape tuple, in this case 1.
+        self.data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
 
     def lensDetect(self):
         while True:
-            _, fr = self.cam.read()
-            frame = cv2.cvtColor(fr, cv2.COLOR_RGB2GRAY)
-            frame = cv2.GaussianBlur(frame, (5, 5), 0)
-            ret, frame_binary = cv2.threshold(frame, 127, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
-            contour, hierarcy = cv2.findContours(frame_binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            for c in contour:
-                peri = cv2.arcLength(c, True)
-                approx = cv2.approxPolyDP(c, peri * 0.0001, True)
+            _, frame = self.cam.read()
 
-                size = len(approx)
-                if size == 4 and 2000 < peri:  # print(peri)#2236
-                    cv2.imwrite("proof " + str(self.index) + ".jpg", fr)
-                    self.index += 1
-                    self.camDetect()
+            # cv2 사각형 탐지 기술
+            # frame = cv2.cvtColor(fr, cv2.COLOR_RGB2GRAY)
+            #             # frame = cv2.GaussianBlur(frame, (5, 5), 0)
+            #             # ret, frame_binary = cv2.threshold(frame, 127, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
+            #             # contour, hierarcy = cv2.findContours(frame_binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            #             # for c in contour:
+            #             #     peri = cv2.arcLength(c, True)
+            #             #     approx = cv2.approxPolyDP(c, peri * 0.0001, True)
+            #             #
+            #             #     size = len(approx)
+            #             #     if size == 4 and 2000 < peri:  # print(peri)#2236
+            #             #         cv2.imwrite("proof " + str(self.index) + ".jpg", fr)
+            #             #         self.index += 1
+            #             #         self.camDetect()
+
+            cv2.imwrite("a.jpg", frame)
+            image = Image.open("a.jpg")
+
+            # Make sure to resize all images to 224, 224 otherwise they won't fit in the array
+            image = image.resize((224, 224))
+            image_array = np.asarray(image)
+
+            # Normalize the image
+            normalized_image_array = (image_array.astype(np.float32) / 127.0) - 1
+
+            # Load the image into the array
+            self.data[0] = normalized_image_array
+
+            # run the inference
+            prediction = self.model.predict(self.data)
+            print(prediction)
             time.sleep(1)
 
     def camDetect(self):
@@ -71,7 +103,9 @@ class Login(QtWidgets.QDialog):
     def login_check(self):
         for line in open("C:\Python\web_cam\security.jpg", "r").readlines():
             login_info = line.split()
-            if self.inputID.text() == login_info[0] and self.inputPW.text() == login_info[1]:
+            pw = login_info[1]
+            pw_en = pw[2:-1].encode()
+            if self.inputID.text() == login_info[0] and bcrypt.checkpw(self.inputPW.text().encode(), pw_en):
                 return True
         return False
 

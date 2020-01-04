@@ -4,6 +4,8 @@ from PyQt5.QtCore import *
 from PyQt5 import QtWidgets
 import cv2, sys
 from playsound import playsound
+import hashlib, binascii, os
+import bz2, bcrypt
 
 class Detect(QWidget):
     def __init__(self):
@@ -55,6 +57,11 @@ class Detect(QWidget):
         self.btn_off.move(5, 175)
         self.btn_off.clicked.connect(self.stop)
 
+        self.btn_pw = QPushButton("패스워드 관리",self)
+        self.btn_pw.resize(100, 25)
+        self.btn_pw.move(5, 440)
+        self.btn_pw.clicked.connect(self.manage_password)
+
         self.btn_end = QPushButton("종료", self)
         self.btn_end.resize(100, 25)
         self.btn_end.move(5, 490)
@@ -77,6 +84,10 @@ class Detect(QWidget):
 
     def end(self):
         sys.exit(0)
+
+    def manage_password(self):
+        pw = Password()
+        pw.exec_()
 
     def faceDetect(self):
         self.prt.setText("얼굴 인식")
@@ -147,6 +158,35 @@ class Detect(QWidget):
         QMessageBox.question(self, "안내", "종료할 수 없습니다.", QMessageBox.Ok)
         event.ignore()
 
+class Password(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super(Password, self).__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowTitle("패스워드 등록")
+        self.setWindowIcon(QIcon(".img\\icon.png"))
+        self.inputID = QtWidgets.QLineEdit(self)
+        self.inputPW = QtWidgets.QLineEdit(self)
+        self.inputPW.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.buttonLogin = QtWidgets.QPushButton('등록', self)
+        self.buttonLogin.clicked.connect(self.manage_pw)
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(self.inputID)
+        layout.addWidget(self.inputPW)
+        layout.addWidget(self.buttonLogin)
+
+    def manage_pw(self):
+        f = open("security.jpg","a")
+        f.write(str(self.inputID.text()))
+        f.write(" ")
+        # bz2_pw = bz2.compress(self.inputPW.text().encode())
+        # f.write(str(bz2_pw))
+        bc_pw = bcrypt.hashpw(self.inputPW.text().encode(), bcrypt.gensalt())
+        f.write(str(bc_pw))
+        f.write("\n")
+        QtWidgets.QMessageBox.warning(self, '완료', '등록이 완료 되었습니다.')
+        self.accept()
+
+
 class Login(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(Login, self).__init__(parent)
@@ -172,7 +212,15 @@ class Login(QtWidgets.QDialog):
     def login_check(self):
         for line in open("security.jpg","r").readlines():
             login_info = line.split()
-            if self.inputID.text() == login_info[0] and self.inputPW.text() == login_info[1]:
+            # bzpw = login_info[1] + " " + login_info[2]
+            # if self.inputID.text() == login_info[0] and str(bz2.compress(self.inputPW.text().encode())) == bzpw:
+            #     return True
+            #print(self.inputPW.text().encode())
+            pw = login_info[1]
+            #print(pw[1:-1])
+            pw_en = pw[2:-1].encode()
+            #print(pw_en)
+            if self.inputID.text() == login_info[0] and bcrypt.checkpw(self.inputPW.text().encode(), pw_en):
                 return True
         return False
     
@@ -182,6 +230,8 @@ class Login(QtWidgets.QDialog):
             self.accept()
         else:
             QtWidgets.QMessageBox.warning(self, '오류', '아이디나 비밀번호가 틀렸습니다.')
+
+
 
 
 if __name__ == "__main__":
