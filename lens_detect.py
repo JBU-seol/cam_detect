@@ -178,14 +178,14 @@ class Password(QtWidgets.QDialog):
         f = open("security.jpg","a")
         f.write(str(self.inputID.text()))
         f.write(" ")
-        # bz2_pw = bz2.compress(self.inputPW.text().encode())
-        # f.write(str(bz2_pw))
         bc_pw = bcrypt.hashpw(self.inputPW.text().encode(), bcrypt.gensalt())
         f.write(str(bc_pw))
         f.write("\n")
         QtWidgets.QMessageBox.warning(self, '완료', '등록이 완료 되었습니다.')
         self.accept()
 
+        # bz2_pw = bz2.compress(self.inputPW.text().encode())
+        # f.write(str(bz2_pw))
 
 class Login(QtWidgets.QDialog):
     def __init__(self, parent=None):

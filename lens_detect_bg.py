@@ -2,9 +2,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import  *
 from PyQt5.QtCore import *
 from PyQt5 import QtWidgets
-import cv2, sys, time
+import cv2, sys, time, os
 import numpy as np
-import tensorflow.keras
+import tensorflow
 from PIL import Image
 from playsound import playsound
 import bcrypt
@@ -17,7 +17,7 @@ class screenguard():
         np.set_printoptions(suppress=True)
 
         # Load the model
-        self.model = tensorflow.keras.models.load_model('keras_model.h5')
+        self.model = tensorflow.keras.models.load_model('keras_model.h5', compile= False)
 
         # Create the array of the right shape to feed into the keras model
         # The 'length' or number of images you can put into the array is
@@ -27,38 +27,22 @@ class screenguard():
     def lensDetect(self):
         while True:
             _, frame = self.cam.read()
-
-            # cv2 사각형 탐지 기술
-            # frame = cv2.cvtColor(fr, cv2.COLOR_RGB2GRAY)
-            #             # frame = cv2.GaussianBlur(frame, (5, 5), 0)
-            #             # ret, frame_binary = cv2.threshold(frame, 127, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
-            #             # contour, hierarcy = cv2.findContours(frame_binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            #             # for c in contour:
-            #             #     peri = cv2.arcLength(c, True)
-            #             #     approx = cv2.approxPolyDP(c, peri * 0.0001, True)
-            #             #
-            #             #     size = len(approx)
-            #             #     if size == 4 and 2000 < peri:  # print(peri)#2236
-            #             #         cv2.imwrite("proof " + str(self.index) + ".jpg", fr)
-            #             #         self.index += 1
-            #             #         self.camDetect()
-
             cv2.imwrite("a.jpg", frame)
             image = Image.open("a.jpg")
-
             # Make sure to resize all images to 224, 224 otherwise they won't fit in the array
             image = image.resize((224, 224))
             image_array = np.asarray(image)
-
             # Normalize the image
             normalized_image_array = (image_array.astype(np.float32) / 127.0) - 1
-
             # Load the image into the array
             self.data[0] = normalized_image_array
-
             # run the inference
             prediction = self.model.predict(self.data)
-            print(prediction)
+            pred = str(prediction[0])
+            if int(pred[3:6]) >= 800:
+                cv2.imwrite("proof " + str(self.index) + ".jpg", frame)
+                self.index += 1
+                self.camDetect()
             time.sleep(1)
 
     def camDetect(self):
@@ -111,6 +95,7 @@ class Login(QtWidgets.QDialog):
 
 def main():
     print("Screen Guard On")
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     sg = screenguard()
     sg.lensDetect()
 
